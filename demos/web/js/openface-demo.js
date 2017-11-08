@@ -211,7 +211,7 @@ function createSocket(address, name) {
             $("#peopleInVideo").html(h);
         } else if (j.type == "ANNOTATED") {
             $("#detectedFaces").html(
-                "<img src='" + j['content'] + "' width='430px'></img>"
+                "<img src='" + j['content'] + "' width='522px'></img>"
             )
         } else if (j.type == "TSNE_DATA") {
             BootstrapDialog.show({
@@ -258,11 +258,7 @@ function addPersonCallback(el) {
         };
         socket.send(JSON.stringify(msg));
     }
-    redrawPeople();
-}
-
-function trainingChkCallback() {
-    training = $("#trainingChk").prop('checked');
+    training = true
     if (training) {
         makeTabActive("tab-preview");
     } else {
@@ -274,7 +270,25 @@ function trainingChkCallback() {
             'val': training
         };
         socket.send(JSON.stringify(msg));
+    }   
+    redrawPeople();
+    setTimeout(trainingChkCallback, 10000);
+}
+
+function trainingChkCallback() {
+    training = false;
+    if (training) {
+        makeTabActive("tab-preview");
+    } else {
+        makeTabActive("tab-annotated");
     }
+    if (socket != null) {
+        var msg = {
+            'type': 'TRAINING',
+            'val': training
+        };
+        socket.send(JSON.stringify(msg));
+    }   
 }
 
 function viewTSNECallback(el) {

@@ -27,7 +27,7 @@ h1, .h1, h2, .h2, h3, .h3, {
 }
 
 .addPersonDiv{
-  max-width: 330px;
+  max-width: 250px;
 }
 
 img {
@@ -36,8 +36,8 @@ img {
 }
 
 .container .header {
-    text-align: center;
-    top: 0;
+ /*   text-align: center;*/
+    top: 5px;
     bottom: 330px;
     position: absolute;
     right: 0;
@@ -51,15 +51,17 @@ img {
 }
 
 .container .content {
-    top: 350px;
+    /*top: 400px;*/
+    top: 20px;
     bottom: 0;
     position: absolute;
     right: 0;
-    left: 0;
+    left: 50%;
     margin: auto;
-    width: 80%;
+    width: 40%;
     height: auto;
-    overflow-y: scroll;
+    overflow-y: hidden;
+    overflow-x: hidden;
 }
 
 a.remove {
@@ -73,6 +75,7 @@ ul.tabs{
     list-style: none;
 }
 ul.tabs li{
+    left: 20%;
     background: none;
     display: inline-block;
     padding: 10px 15px;
