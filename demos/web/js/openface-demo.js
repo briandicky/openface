@@ -79,6 +79,15 @@ function sendFrameLoop() {
 }
 
 
+function getCurrentStatus() {
+    if (curStatus == 0) return "";
+    else if (curStatus == 1) return "Please look at your Webcam for 5 seconds.";
+    else if (curStatus == 2) return "Smile :)";
+    else if (curStatus == 3) return "Success!";
+    else if (curStatus == 4) return "Fail. Try again.";
+    else if (curStatus == 5) return "Please login or register.";
+}
+
 function getPeopleInfoHtml() {
     var info = {'-1': 0};
     var len = people.length;
@@ -97,7 +106,15 @@ function getPeopleInfoHtml() {
     for (var i = 0; i < len; i++) {
         h += "<li><b>"+people[i]+":</b> "+info[i]+"</li>";
     }
-    return h;
+    //return h;
+    if (len>0){
+	 return "Hi, "+people[len-1];
+    }
+    else return "Please Login";
+}
+
+function updateStatus() {
+    $("#currentStatus").html(getCurrentStatus());
 }
 
 function redrawPeople() {
@@ -217,7 +234,24 @@ function createSocket(address, name) {
             BootstrapDialog.show({
                 message: "<img src='" + j['content'] + "' width='100%'></img>"
             });
-        } else {
+        } 
+        else if (j.type == "CERTIFIED_SUCCESS") {
+            //curStatus= 0;
+            curStatus = 3;
+            updateStatus();
+	    makeTabActive("tab-annotated");
+            window.open('http://140.114.77.170/sample_All_CreateOrder.php');
+        } else if (j.type == "CERTIFIED_FAIL") {
+            if (j.val == 1){ // un-registered
+            	curStatus = 5;
+            }
+            else if (j.val == 0){ // certification fail
+            	curStatus = 4;
+            }
+	    makeTabActive("tab-annotated");
+            updateStatus();
+        }
+        else {
             console.log("Unrecognized message type: " + j.type);
         }
     }
@@ -242,6 +276,29 @@ function umSuccess(stream) {
     vid.play();
     vidReady = true;
     sendFrameLoop();
+}
+
+
+function payCallback(el) {
+    //Check if smile?
+    training = true
+    if (training) {
+        makeTabActive("tab-preview");
+    } else {
+        makeTabActive("tab-annotated");
+    }
+    if (socket != null) {
+        var msg = {
+            'type': 'TRY_CERTIFY',
+            'val': true
+        };
+        socket.send(JSON.stringify(msg));
+    }
+    curStatus= 2;
+    updateStatus();
+   // curState = 0;
+   // updateStatus();
+   //window.open('http://140.114.77.170/sample_All_CreateOrder.php');
 }
 
 function addPersonCallback(el) {
@@ -270,7 +327,9 @@ function addPersonCallback(el) {
             'val': training
         };
         socket.send(JSON.stringify(msg));
-    }   
+    }  
+    curStatus = 1;
+    updateStatus(); 
     redrawPeople();
     setTimeout(trainingChkCallback, 10000);
 }
@@ -289,6 +348,8 @@ function trainingChkCallback() {
         };
         socket.send(JSON.stringify(msg));
     }   
+    curStatus = 0;
+    updateStatus();
 }
 
 function viewTSNECallback(el) {

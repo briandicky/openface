@@ -56,9 +56,9 @@ img {
     bottom: 0;
     position: absolute;
     right: 0;
-    left: 50%;
+    left: 680px;
     margin: auto;
-    width: 40%;
+    width: 80%;
     height: auto;
     overflow-y: hidden;
     overflow-x: hidden;

@@ -28,7 +28,6 @@ limitations under the License.
     </head>
     <body>
         <div class="container">
-
             <div class="header">
                     <!--ul class='tabs'>
                         <li class='tab-link' data-tab='tab-preview'
@@ -40,9 +39,10 @@ limitations under the License.
                             Annotated
                         </li>
                     </ul-->
-		<h1>                       
+		<div id=hello>                       
 		 <span style="display:inline-block; width: 60px;"></span>
-		Hi, Scoly</h1>
+		<h1 id=peopleInfo>Hi </h1>
+		</div>
                 <div id='tab-preview' class='tab-content'>
 		                 <span style="display:block; height: 48px;"></span>
 		                 <span style="display:inline-block; width: 64px;"></span>
@@ -52,7 +52,11 @@ limitations under the License.
                 <div id='tab-annotated' class='tab-content current'>
                     <div id="detectedFaces"></div>
                 </div>
-            </div>
+		<div id=sta>                       
+		<h3 id=currentStatus> </h3>
+		</div>
+    </div>
+
             <div class="content">
                 <!-- Modified by MosQuito
                     <h2>People in Video</h2>
@@ -89,7 +93,7 @@ limitations under the License.
                     <input type="checkbox" checked data-toggle="toggle"
                            id="trainingChk">
                 </h2-->
-                <div class="input-group addPersonDiv">
+                <div class="input-group addPersonDiv" style="left: 80px">
                     <span class="input-group-btn">
                         <input type="text" class="form-control" id="addPersonTxt">
 		    	<span style="display:inline-block; width: 10px;"></span>
@@ -105,6 +109,80 @@ limitations under the License.
                     </span>
                 </div>
 
+    <div class="col-xs-6">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th></th>
+            <th></th>
+            <th>Product</th>
+            <th class="text-center">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+	   	<input type="checkbox" name="cloth" value="cloth1"> 
+            </td>
+            <td>
+		<img src="images/cloth1.jpg">
+            </td>
+		<span style="display:inline-block; width: 10px;"></span>
+            <td>
+		秋冬女裝韓版bf風寬鬆可愛卡通毛球貼佈套頭衛衣連帽外套學生上衣 
+            </td>
+            <td class="col-md-1 text-center">$399</td>
+          </tr>
+          <tr>
+            <td>
+	   	<input type="checkbox" name="cloth" value="cloth1"> 
+            </td>
+            <td>
+		<img src="images/cloth2.jpg">
+            </td>
+		<span style="display:inline-block; width: 10px;"></span>
+            <td>
+		秋冬女裝韓版復古百搭套頭加厚情侶裝毛衣外套條紋寬鬆上衣學生潮 </td>
+            <td class="col-md-1 text-center">$450</td>
+          </tr>
+          <tr>
+            <td>
+	   	<input type="checkbox" name="cloth" value="cloth2"> 
+            </td>
+            <td>
+		<img src="images/cloth3.jpg">
+            </td>
+		<span style="display:inline-block; width: 10px;"></span>
+            <td>
+		秋裝女裝韓版寬鬆童趣彩色條紋拼接套頭毛衣無袖針織馬甲背心學生 </td>
+            <td class="col-md-1 text-center">$270</td>
+          </tr>
+          <tr>
+            <td>
+	   	<input type="checkbox" name="cloth" value="cloth4"> 
+            </td>
+            <td>
+		<img src="images/cloth4.jpg">
+            </td>
+		<span style="display:inline-block; width: 10px;"></span>
+            <td>
+		秋裝女裝韓版甜美小清新領口繫帶翻領寬鬆長袖套頭毛衣針織衫學生 </td>
+            <td class="col-md-1 text-center">$250</td>
+          </tr>
+          <!--tr>
+            <td></td>
+            <td></td>
+            <td class="text-right"><h4><strong>Total:</strong></h4></td>
+            <td class="text-center text-danger"><h4><strong><ul id="peopleInfo"></ul></strong></h4></td>
+          </tr-->
+        </tbody>
+      </table>
+            <div class="con" style="text-align: right">
+		<button class="btn btn-default" type="button" id="payBtn">
+           	PAY!
+		</button>
+	    </div>
+    </div>
                 <!-- Modified by MosQuito
                 <br/>
                     <div>
@@ -130,7 +208,7 @@ limitations under the License.
                     <ul class="dropdown-menu"
                         aria-labelledby="defaultPersonDropdown"
                         id="defaultPersonDropdownMenu">
-                        <li><a href="javascript:defaultPerson=-1">Unknown</a></li>
+                        <li><a href="javascript:defaultPerson=-1">Unkkknown</a></li>
                         {{#each people}}
                         <li>
                             <a href="javascript:defaultPerson={{@index}}">
@@ -143,7 +221,7 @@ limitations under the License.
 
                 <br/>
 
-                <ul id="peopleInfo"></ul>
+                <!--ul id="peopleInfo"></ul-->
 
                 <br/>
 
@@ -233,6 +311,7 @@ limitations under the License.
          people = [], defaultPerson = -1,
          images = [],
          training = false;
+     var curStatus=0;
      var numNulls, sentTimes, receivedTimes;
      var socket, socketName;
 
@@ -249,6 +328,7 @@ limitations under the License.
      }
 
      $("#serverBtn.btn-group > .btn").click(changeServerCallback);
+     $("#payBtn").click(payCallback);
      $("#addPersonBtn").click(addPersonCallback);
      $("#addPersonTxt").pressEnter(addPersonCallback);
      $("#trainingChk").change(trainingChkCallback);

@@ -18,6 +18,10 @@ import os
 import sys
 fileDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(fileDir, "..", ".."))
+sys.path.append(os.path.join(fileDir, "model"))
+webcam_dir = os.path.join(fileDir, "webcam")
+sys.path.append(webcam_dir)
+print (sys.path)
 
 import txaio
 txaio.use_twisted()
@@ -51,6 +55,13 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 import openface
+
+# import from my previous project
+# from model import myVGG as vgg
+#import model.myVGG as vgg
+import myVGG as vgg
+import face_detection_utilities as fdu
+from keras.models import load_model
 
 modelDir = os.path.join(fileDir, '..', '..', 'models')
 dlibModelDir = os.path.join(modelDir, 'dlib')
@@ -97,6 +108,14 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
         super(OpenFaceServerProtocol, self).__init__()
         self.images = {}
         self.training = True
+        self.certifying = False
+        self.certifying_buf = []
+        '''
+        model_path = os.path.join(webcam_dir, "my_model_weights_83.h5")
+        self.emo_model = vgg.VGG_16(model_path)
+        '''
+        model_path = os.path.join(webcam_dir, "fer2013_mini_XCEPTION.102-0.66.hdf5")
+        self.emo_model = load_model(model_path)
         self.people = []
         self.svm = None
         if args.unknown:
@@ -119,10 +138,14 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
         elif msg['type'] == "NULL":
             self.sendMessage('{"type": "NULL"}')
         elif msg['type'] == "FRAME":
+            #print ("receive frame")
+            if self.certifying:
+                self.sendCertifyResult(msg['dataURL'], msg['identity'])
             self.processFrame(msg['dataURL'], msg['identity'])
             self.sendMessage('{"type": "PROCESSED"}')
         elif msg['type'] == "TRAINING":
             self.training = msg['val']
+            print(self.people)
             if not self.training:
                 self.trainSVM()
         elif msg['type'] == "ADD_PERSON":
@@ -146,6 +169,9 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
                 print("Image not found.")
         elif msg['type'] == 'REQ_TSNE':
             self.sendTSNE(msg['people'])
+        elif msg['type'] == 'TRY_CERTIFY':
+            self.certifying = msg['val']
+            self.sendMessage('{"type": "PROCESSED"}')
         else:
             print("Warning: Unknown message type: {}".format(msg['type']))
 
@@ -192,6 +218,7 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
         y = np.array(y)
         return (X, y)
 
+         
     def sendTSNE(self, people):
         d = self.getData()
         if d is None:
@@ -246,6 +273,81 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
                  'kernel': ['rbf']}
             ]
             self.svm = GridSearchCV(SVC(C=1), param_grid, cv=5).fit(X, y)
+
+    def sendCertifyResult(self, dataURL, identity):
+        head = "data:image/jpeg;base64,"
+        assert(dataURL.startswith(head))
+        imgdata = base64.b64decode(dataURL[len(head):])
+        imgF = StringIO.StringIO()
+        imgF.write(imgdata)
+        imgF.seek(0)
+        img = Image.open(imgF)
+        # preprocess frame
+        buf = np.fliplr(np.asarray(img))
+        rgbFrame = np.zeros((300, 400, 3), dtype=np.uint8)
+        rgbFrame[:, :, 0] = buf[:, :, 0]
+        rgbFrame[:, :, 1] = buf[:, :, 1]
+        rgbFrame[:, :, 2] = buf[:, :, 2]
+        '''
+        rgbFrame[:, :, 0] = buf[:, :, 2]
+        rgbFrame[:, :, 1] = buf[:, :, 1]
+        rgbFrame[:, :, 2] = buf[:, :, 0]
+        '''
+        #rgbFrame = cv2.resize(rgbFrame, (320, 240))
+        #print (rgbFrame)
+        #alignedFace = cv2.cvtColor(rgbFrame, cv2.COLOR_RGB2GRAY)
+        fcoord = fdu.getFaceCoordinates(rgbFrame)
+        print (fcoord)
+        if fcoord is None:
+            return 
+        alignedFace = fdu.preprocess(rgbFrame, fcoord, (64, 64))
+        cv2.imwrite("test.png", alignedFace)
+        alignedFace = np.expand_dims(alignedFace, axis=-1)
+        print (alignedFace.shape)
+        
+        '''
+        bb = align.getLargestFaceBoundingBox(rgbFrame)
+        bbs = [bb] if bb is not None else []
+        for bb in bbs:
+            # print(len(bbs))
+            landmarks = align.findLandmarks(rgbFrame, bb)
+            alignedFace = align.align(args.imgDim, rgbFrame, bb,
+                                      landmarks=landmarks,
+                                      landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
+        alignedFace = cv2.cvtColor(alignedFace, cv2.COLOR_RGB2GRAY)
+        alignedFace = cv2.resize(alignedFace, (48, 48))
+        cv2.imwrite("test.png", alignedFace)
+        alignedFace = np.expand_dims(alignedFace, axis=0)
+        #print (alignedFace.shape)
+        '''
+        if alignedFace is None:
+            return
+
+        self.certifying_buf.append(alignedFace/255.0)
+        
+        if (len(self.certifying_buf) >= 15):
+            frame_to_be_tested = np.asarray(self.certifying_buf)
+            result = self.emo_model.predict(frame_to_be_tested)
+            print (result)
+            print (result.sum(0))
+            emotion_type = np.argmax(result.sum(0))
+
+            if emotion_type == 3 and identity != -1:
+                # send success signal
+                print ("successful")
+                msg = {"type" : "CERTIFIED_SUCCESS"}
+            elif identity == -1:
+                msg = {"type" : "CERTIFIED_FAIL",
+                       "val"  : 1}
+            else:
+                msg = {"type" : "CERTIFIED_FAIL",
+                       "val"  : 0}
+
+            self.sendMessage(json.dumps(msg))
+            # empty buffer
+            self.certifying_buf = []
+            # reset certifying signal
+            self.certifying = False
 
     def processFrame(self, dataURL, identity):
         head = "data:image/jpeg;base64,"
